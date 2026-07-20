@@ -1,0 +1,150 @@
+{% extends "dashboard/base.html" %}
+
+
+{% block content %}
+
+
+<h1 class="mb-4">
+    Real-Time Fraud Detection Dashboard
+</h1>
+
+
+
+<div class="row">
+
+
+    <!-- Total Transactions -->
+
+    <div class="col-md-3 mb-4">
+
+        <div class="card shadow-sm">
+
+            <div class="card-body">
+
+                <h5 class="card-title">
+                    Total Transactions
+                </h5>
+
+
+                <h2>
+                    {{ total_transactions }}
+                </h2>
+
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- Fraud -->
+
+    <div class="col-md-3 mb-4">
+
+        <div class="card shadow-sm border-danger">
+
+
+            <div class="card-body">
+
+
+                <h5 class="card-title text-danger">
+                    Fraud Detected
+                </h5>
+
+
+                <h2>
+                    {{ fraud_transactions }}
+                </h2>
+
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+
+
+
+    <!-- Safe -->
+
+    <div class="col-md-3 mb-4">
+
+
+        <div class="card shadow-sm border-success">
+
+
+            <div class="card-body">
+
+
+                <h5 class="card-title text-success">
+
+                    Safe Transactions
+
+                </h5>
+
+
+                <h2>
+
+                    {{ safe_transactions }}
+
+                </h2>
+
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+
+
+
+    <!-- Risk -->
+
+    <div class="col-md-3 mb-4">
+
+
+        <div class="card shadow-sm border-warning">
+
+
+            <div class="card-body">
+
+
+                <h5 class="card-title text-warning">
+
+                    Average Risk Score
+
+                </h5>
+
+
+                <h2>
+
+                    {{ average_risk }}%
+
+                </h2>
+
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+
+</div>
+
+
+
+{% endblock %}
