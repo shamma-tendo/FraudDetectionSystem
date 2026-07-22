@@ -278,4 +278,82 @@ Medium
 {% endfor %}
 
 </div>
+
+<hr class="my-5">
+
+<h2 class="mb-4">
+    Fraud Statistics
+</h2>
+
+<div class="row">
+
+    <div class="col-lg-8">
+
+        <div class="card shadow">
+
+            <div class="card-body">
+
+                <canvas id="fraudChart"></canvas>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-lg-4">
+
+        <div class="card shadow">
+
+            <div class="card-body">
+
+                <canvas id="riskChart"></canvas>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+
+const fraudChart = document.getElementById("fraudChart").getContext("2d");
+
+new Chart(fraudChart, {
+    type: "bar",
+    data: {
+        labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+        datasets: [{
+            label: "Fraud Cases",
+            data: [3, 6, 2, 8, 5, 9, 4],
+            backgroundColor: "#3b82f6"
+        }]
+    }
+});
+
+const riskChart = document.getElementById("riskChart").getContext("2d");
+
+new Chart(riskChart, {
+    type: "doughnut",
+    data: {
+        labels: ["Safe", "Fraud"],
+        datasets: [{
+            data: [1202, 43],
+            backgroundColor: [
+                "#10b981",
+                "#ef4444"
+            ]
+        }]
+    }
+});
+
+</script>
+
 {% endblock %}
