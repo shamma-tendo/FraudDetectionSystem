@@ -18,7 +18,7 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <h6 class="text-muted text-uppercase small mb-1">Total Transactions</h6>
-                        <h2 class="fw-bold mb-0">{{ total_transactions }}</h2>
+                        <h2 class="fw-bold mb-0 mono">{{ total_transactions }}</h2>
                     </div>
                     <div class="rounded-circle d-flex align-items-center justify-content-center"
                          style="width:48px;height:48px;background-color:#eaf2ff;">
@@ -36,7 +36,7 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <h6 class="text-danger text-uppercase small mb-1">Fraud Detected</h6>
-                        <h2 class="fw-bold mb-0">{{ fraud_transactions }}</h2>
+                        <h2 class="fw-bold mb-0 mono">{{ fraud_transactions }}</h2>
                     </div>
                     <div class="rounded-circle d-flex align-items-center justify-content-center"
                          style="width:48px;height:48px;background-color:#fdecec;">
@@ -54,7 +54,7 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <h6 class="text-success text-uppercase small mb-1">Safe Transactions</h6>
-                        <h2 class="fw-bold mb-0">{{ safe_transactions }}</h2>
+                        <h2 class="fw-bold mb-0 mono">{{ safe_transactions }}</h2>
                     </div>
                     <div class="rounded-circle d-flex align-items-center justify-content-center"
                          style="width:48px;height:48px;background-color:#e8fbf1;">
@@ -72,7 +72,7 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <h6 class="text-warning text-uppercase small mb-1">Average Risk Score</h6>
-                        <h2 class="fw-bold mb-0">{{ average_risk }}%</h2>
+                        <h2 class="fw-bold mb-0 mono">{{ average_risk }}%</h2>
                     </div>
                     <div class="rounded-circle d-flex align-items-center justify-content-center"
                          style="width:48px;height:48px;background-color:#fef6e7;">
@@ -87,273 +87,195 @@
 
 <hr class="my-4">
 
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h2 class="mb-0"><i class="bi bi-list-ul me-2"></i>Recent Transactions</h2>
 
-<h2 class="mb-3">
-    Recent Transactions
-</h2>
+    <!-- 🔍 Search + filter controls (client-side, no backend change needed) -->
+    <div class="d-flex gap-2 flex-wrap">
+        <div class="input-group input-group-sm" style="width: 220px;">
+            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+            <input type="text" id="txnSearch" class="form-control" placeholder="Search customer or location...">
+        </div>
 
+        <select id="statusFilter" class="form-select form-select-sm" style="width: 150px;">
+            <option value="all">All Statuses</option>
+            <option value="Fraud">Fraud</option>
+            <option value="Review">Review</option>
+            <option value="Safe">Safe</option>
+        </select>
+    </div>
+</div>
 
 <div class="table-responsive">
-
-
-<table class="table table-striped table-hover">
-
+<table class="table table-striped table-hover align-middle" id="txnTable">
 
 <thead class="table-dark">
-
-
 <tr>
-
-<th>
-Customer
-</th>
-
-
-<th>
-Amount
-</th>
-
-
-<th>
-Location
-</th>
-
-
-<th>
-Risk Score
-</th>
-
-
-<th>
-Status
-</th>
-
-
+    <th>Customer</th>
+    <th>Amount</th>
+    <th>Location</th>
+    <th>Risk Score</th>
+    <th>Status</th>
 </tr>
-
-
 </thead>
 
-
-
 <tbody>
-
-
 {% for transaction in transactions %}
+<tr data-status="{{ transaction.status }}"
+    data-search="{{ transaction.customer|lower }} {{ transaction.location|lower }}">
 
-
-<tr>
-
-
-<td>
-{{ transaction.customer }}
-</td>
-
-
-<td>
-UGX {{ transaction.amount }}
-</td>
-
-
-<td>
-{{ transaction.location }}
-</td>
-
-
-<td>
-{{ transaction.risk }}%
-</td>
-
-
-
-<td>
-
-
-{% if transaction.status == "Fraud" %}
-
-
-<span class="badge bg-danger">
-
-{{ transaction.status }}
-
-</span>
-
-
-{% elif transaction.status == "Review" %}
-
-
-<span class="badge bg-warning text-dark">
-
-{{ transaction.status }}
-
-</span>
-
-
-{% else %}
-
-
-<span class="badge bg-success">
-
-{{ transaction.status }}
-
-</span>
-
-
-{% endif %}
-
-
-</td>
-
-
-
+    <td>{{ transaction.customer }}</td>
+    <td class="mono">UGX {{ transaction.amount }}</td>
+    <td>{{ transaction.location }}</td>
+    <td style="min-width: 140px;">
+        <div class="d-flex align-items-center gap-2">
+            <div class="progress flex-grow-1" style="height: 6px;">
+                <div class="progress-bar
+                    {% if transaction.risk >= 70 %}bg-danger
+                    {% elif transaction.risk >= 40 %}bg-warning
+                    {% else %}bg-success{% endif %}"
+                    style="width: {{ transaction.risk }}%;">
+                </div>
+            </div>
+            <span class="mono small">{{ transaction.risk }}%</span>
+        </div>
+    </td>
+    <td>
+        {% if transaction.status == "Fraud" %}
+            <span class="badge bg-danger">{{ transaction.status }}</span>
+        {% elif transaction.status == "Review" %}
+            <span class="badge bg-warning text-dark">{{ transaction.status }}</span>
+        {% else %}
+            <span class="badge bg-success">{{ transaction.status }}</span>
+        {% endif %}
+    </td>
 </tr>
-
-
 {% endfor %}
-
-
-
 </tbody>
-
 
 </table>
 
-
+<p class="text-muted small d-none" id="noResultsMsg">No transactions match your search/filter.</p>
 </div>
 
 <hr class="my-5">
 
-<h2 class="mb-3">
-    🚨 Recent Fraud Alerts
-</h2>
+<h2 class="mb-3"><i class="bi bi-bell-fill text-danger me-2"></i>Recent Fraud Alerts</h2>
 
 <div class="list-group">
-
 {% for alert in alerts %}
-
 <div class="list-group-item">
-
-<div class="d-flex justify-content-between">
-
-<div>
-
-{% if alert.severity == "Critical" %}
-
-<span class="badge bg-dark">
-Critical
-</span>
-
-{% elif alert.severity == "High" %}
-
-<span class="badge bg-danger">
-High
-</span>
-
-{% else %}
-
-<span class="badge bg-warning text-dark">
-Medium
-</span>
-
-{% endif %}
-
-<strong class="ms-2">
-
-{{ alert.message }}
-
-</strong>
-
+    <div class="d-flex justify-content-between">
+        <div>
+            {% if alert.severity == "Critical" %}
+                <span class="badge bg-dark">Critical</span>
+            {% elif alert.severity == "High" %}
+                <span class="badge bg-danger">High</span>
+            {% else %}
+                <span class="badge bg-warning text-dark">Medium</span>
+            {% endif %}
+            <strong class="ms-2">{{ alert.message }}</strong>
+        </div>
+        <small class="text-muted">{{ alert.time }}</small>
+    </div>
 </div>
-
-<small>
-
-{{ alert.time }}
-
-</small>
-
-</div>
-
-</div>
-
 {% endfor %}
-
 </div>
 
 <hr class="my-5">
 
-<h2 class="mb-4">
-    Fraud Statistics
-</h2>
+<h2 class="mb-4"><i class="bi bi-bar-chart-line-fill me-2"></i>Fraud Statistics</h2>
 
-<div class="row">
-
+<div class="row g-4">
     <div class="col-lg-8">
-
-        <div class="card shadow">
-
+        <div class="card shadow-sm">
             <div class="card-body">
-
+                <h6 class="text-muted text-uppercase small mb-3">Weekly Fraud Cases</h6>
                 <canvas id="fraudChart"></canvas>
-
             </div>
-
         </div>
-
     </div>
 
     <div class="col-lg-4">
-
-        <div class="card shadow">
-
+        <div class="card shadow-sm">
             <div class="card-body">
-
+                <h6 class="text-muted text-uppercase small mb-3">Safe vs Fraud</h6>
                 <canvas id="riskChart"></canvas>
-
             </div>
-
         </div>
-
     </div>
-
 </div>
 
+<!-- 📊 Real data passed safely from Django views (see notes below) -->
+{{ weekly_labels|json_script:"weekly-labels-data" }}
+{{ weekly_fraud_counts|json_script:"weekly-fraud-data" }}
+{{ safe_transactions|json_script:"safe-count-data" }}
+{{ fraud_transactions|json_script:"fraud-count-data" }}
 
 {% endblock %}
 
 {% block scripts %}
-
 <script>
+    // ---------- 🔍 Search + status filter for transactions table ----------
+    const searchInput = document.getElementById('txnSearch');
+    const statusFilter = document.getElementById('statusFilter');
+    const rows = document.querySelectorAll('#txnTable tbody tr');
+    const noResultsMsg = document.getElementById('noResultsMsg');
 
-const fraudChart = document.getElementById("fraudChart").getContext("2d");
+    function applyFilters() {
+        const term = searchInput.value.trim().toLowerCase();
+        const status = statusFilter.value;
+        let visibleCount = 0;
 
-new Chart(fraudChart, {
-    type: "bar",
-    data: {
-        labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-        datasets: [{
-            label: "Fraud Cases",
-            data: [3, 6, 2, 8, 5, 9, 4],
-            backgroundColor: "#3b82f6"
-        }]
+        rows.forEach(row => {
+            const matchesSearch = row.dataset.search.includes(term);
+            const matchesStatus = status === 'all' || row.dataset.status === status;
+            const show = matchesSearch && matchesStatus;
+            row.classList.toggle('d-none', !show);
+            if (show) visibleCount++;
+        });
+
+        noResultsMsg.classList.toggle('d-none', visibleCount !== 0);
     }
-});
 
-const riskChart = document.getElementById("riskChart").getContext("2d");
+    searchInput.addEventListener('input', applyFilters);
+    statusFilter.addEventListener('change', applyFilters);
 
-new Chart(riskChart, {
-    type: "doughnut",
-    data: {
-        labels: ["Safe", "Fraud"],
-        datasets: [{
-            data: [1202, 43],
-            backgroundColor: [
-                "#10b981",
-                "#ef4444"
-            ]
-        }]
-    }
-});
+    // ---------- 📊 Charts using real Django data ----------
+    const weeklyLabels = JSON.parse(document.getElementById('weekly-labels-data').textContent);
+    const weeklyFraudCounts = JSON.parse(document.getElementById('weekly-fraud-data').textContent);
+    const safeCount = JSON.parse(document.getElementById('safe-count-data').textContent);
+    const fraudCount = JSON.parse(document.getElementById('fraud-count-data').textContent);
 
+    new Chart(document.getElementById("fraudChart").getContext("2d"), {
+        type: "bar",
+        data: {
+            labels: weeklyLabels,
+            datasets: [{
+                label: "Fraud Cases",
+                data: weeklyFraudCounts,
+                backgroundColor: "#3b82f6",
+                borderRadius: 6
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    new Chart(document.getElementById("riskChart").getContext("2d"), {
+        type: "doughnut",
+        data: {
+            labels: ["Safe", "Fraud"],
+            datasets: [{
+                data: [safeCount, fraudCount],
+                backgroundColor: ["#10b981", "#ef4444"]
+            }]
+        },
+        options: {
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
 </script>
-
 {% endblock %}

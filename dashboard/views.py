@@ -81,6 +81,9 @@ def dashboard(request):
 
         "transactions": transactions,
           "alerts": alerts,
+           # NEW — needed for the fraud-cases-per-day bar chart
+    "weekly_labels": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    "weekly_fraud_counts": [3, 6, 2, 8, 5, 9, 4],  # replace with a real DB query, e.g. grouped by day
 
     }
 
