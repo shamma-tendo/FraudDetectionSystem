@@ -84,6 +84,7 @@
     </div>
 
 </div>
+
 <hr class="my-4">
 
 
@@ -217,6 +218,64 @@ UGX {{ transaction.amount }}
 
 </table>
 
+
+</div>
+
+<hr class="my-5">
+
+<h2 class="mb-3">
+    🚨 Recent Fraud Alerts
+</h2>
+
+<div class="list-group">
+
+{% for alert in alerts %}
+
+<div class="list-group-item">
+
+<div class="d-flex justify-content-between">
+
+<div>
+
+{% if alert.severity == "Critical" %}
+
+<span class="badge bg-dark">
+Critical
+</span>
+
+{% elif alert.severity == "High" %}
+
+<span class="badge bg-danger">
+High
+</span>
+
+{% else %}
+
+<span class="badge bg-warning text-dark">
+Medium
+</span>
+
+{% endif %}
+
+<strong class="ms-2">
+
+{{ alert.message }}
+
+</strong>
+
+</div>
+
+<small>
+
+{{ alert.time }}
+
+</small>
+
+</div>
+
+</div>
+
+{% endfor %}
 
 </div>
 {% endblock %}

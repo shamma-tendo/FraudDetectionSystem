@@ -42,7 +42,33 @@ def dashboard(request):
 
     ]
 
+    alerts = [
 
+    {
+        "message": "High amount transaction detected",
+        "severity": "High",
+        "time": "2 mins ago"
+    },
+
+    {
+        "message": "Transaction from unusual location",
+        "severity": "Medium",
+        "time": "7 mins ago"
+    },
+
+    {
+        "message": "Multiple rapid transactions detected",
+        "severity": "Critical",
+        "time": "12 mins ago"
+    },
+
+    {
+        "message": "Risk score exceeded threshold",
+        "severity": "High",
+        "time": "20 mins ago"
+    }
+
+]
     context = {
 
         "total_transactions": 1245,
@@ -54,6 +80,7 @@ def dashboard(request):
         "average_risk": 23,
 
         "transactions": transactions,
+          "alerts": alerts,
 
     }
 
