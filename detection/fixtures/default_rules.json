@@ -1,0 +1,47 @@
+[
+  {
+    "model": "detection.detectionrule",
+    "pk": 1,
+    "fields": {
+      "code": "HIGH_AMOUNT",
+      "description": "Amount above 5,000,000 UGX",
+      "is_active": true,
+      "weight": 40,
+      "amount_threshold": "5000000.00"
+    }
+  },
+  {
+    "model": "detection.detectionrule",
+    "pk": 2,
+    "fields": {
+      "code": "VELOCITY",
+      "description": "More than 3 transactions in 10 minutes",
+      "is_active": true,
+      "weight": 30,
+      "velocity_window_minutes": 10,
+      "velocity_max_count": 3
+    }
+  },
+  {
+    "model": "detection.detectionrule",
+    "pk": 3,
+    "fields": {
+      "code": "UNUSUAL_LOCATION",
+      "description": "Location differs from account's usual location",
+      "is_active": true,
+      "weight": 35
+    }
+  },
+  {
+    "model": "detection.detectionrule",
+    "pk": 4,
+    "fields": {
+      "code": "ODD_HOURS",
+      "description": "Transaction between 1am and 4am",
+      "is_active": true,
+      "weight": 15,
+      "odd_hours_start": 1,
+      "odd_hours_end": 4
+    }
+  }
+]
