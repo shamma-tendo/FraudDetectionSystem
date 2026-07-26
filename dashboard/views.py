@@ -90,6 +90,30 @@ def dashboard(request):
 
     return render(
         request,
-        "dashboard/dashboard.html",
+        "dashboard/home.html",
         context
     )
+
+
+def home(request):
+    return dashboard(request)
+
+
+def transaction_list(request):
+    return dashboard(request)
+
+
+def transaction_detail(request, pk=None):
+    return dashboard(request)
+
+
+def alert_list(request):
+    return dashboard(request)
+
+
+def rules_list(request):
+    return dashboard(request)
+
+
+def accounts_list(request):
+    return dashboard(request)
