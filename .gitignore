@@ -23,3 +23,8 @@ Thumbs.db
 *.egg-info/
 dist/
 build/
+
+__pycache__/
+*.py[cod]
+venv/
+.vscode/
