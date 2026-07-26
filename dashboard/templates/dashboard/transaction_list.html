@@ -1,0 +1,66 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Transactions{% endblock %}
+{% block page_title %}Transactions{% endblock %}
+
+{% block content %}
+<div class="card-panel mb-3">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label small mb-1">Status</label>
+            <select name="status" class="form-select form-select-sm">
+                <option value="">All</option>
+                {% for value, label in status_choices %}
+                <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small mb-1">Type</label>
+            <select name="type" class="form-select form-select-sm">
+                <option value="">All</option>
+                {% for value, label in type_choices %}
+                <option value="{{ value }}" {% if current_type == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label small mb-1">Search (account, holder, location)</label>
+            <input type="text" name="q" value="{{ current_search }}" class="form-control form-control-sm" placeholder="e.g. Kampala or ACC1001">
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-sm btn-dark w-100" type="submit">Apply filters</button>
+        </div>
+    </form>
+</div>
+
+<div class="card-panel">
+    <table class="table table-clean mb-0">
+        <thead>
+            <tr>
+                <th>Account</th>
+                <th>Type</th>
+                <th>Amount (UGX)</th>
+                <th>Location</th>
+                <th>Risk</th>
+                <th>Status</th>
+                <th>Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for txn in transactions %}
+            <tr style="cursor:pointer" onclick="window.location='{% url 'dashboard:transaction_detail' txn.id %}'">
+                <td>{{ txn.account.account_number }} <span class="text-muted small">({{ txn.account.holder_name }})</span></td>
+                <td>{{ txn.get_transaction_type_display }}</td>
+                <td>{{ txn.amount|floatformat:0 }}</td>
+                <td>{{ txn.location }}</td>
+                <td>{{ txn.risk_score }}</td>
+                <td><span class="badge badge-{{ txn.status|lower }}">{{ txn.get_status_display }}</span></td>
+                <td class="text-muted small">{{ txn.timestamp|date:"d M H:i" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="text-muted text-center py-4">No transactions match these filters.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

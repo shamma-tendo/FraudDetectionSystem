@@ -1,0 +1,38 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Detection rules{% endblock %}
+{% block page_title %}Detection rules{% endblock %}
+
+{% block content %}
+<div class="card-panel">
+    <p class="text-muted small">
+        These rules drive the anomaly detection engine. Edit thresholds and weights from the
+        <a href="/admin/detection/detectionrule/">admin panel</a> &mdash; changes apply to the next transaction immediately, no restart needed.
+    </p>
+    <table class="table table-clean mb-0">
+        <thead>
+            <tr>
+                <th>Rule</th>
+                <th>Active</th>
+                <th>Weight</th>
+                <th>Threshold detail</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rule in rules %}
+            <tr>
+                <td>{{ rule.description }}</td>
+                <td>{% if rule.is_active %}<span class="badge badge-cleared">Yes</span>{% else %}<span class="badge badge-pending">No</span>{% endif %}</td>
+                <td>{{ rule.weight }} pts</td>
+                <td class="text-muted small">
+                    {% if rule.amount_threshold %}Threshold: {{ rule.amount_threshold|floatformat:0 }} UGX{% endif %}
+                    {% if rule.velocity_max_count %}Max {{ rule.velocity_max_count }} txns / {{ rule.velocity_window_minutes }} min{% endif %}
+                    {% if rule.odd_hours_start is not None %}Window: {{ rule.odd_hours_start }}:00–{{ rule.odd_hours_end }}:00{% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-muted text-center py-4">No rules configured yet &mdash; run <code>loaddata default_rules</code>.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
