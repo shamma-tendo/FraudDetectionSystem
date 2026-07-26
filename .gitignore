@@ -3,28 +3,12 @@ __pycache__/
 *.py[cod]
 *.pyo
 
-# Virtual Environment
+# Virtual environment
 venv/
 .env
-
-# Django
-db.sqlite3
 
 # VS Code
 .vscode/
 
-# macOS
-.DS_Store
-
-# Windows
-Thumbs.db
-
-# Python packaging
-*.egg-info/
-dist/
-build/
-
-__pycache__/
-*.py[cod]
-venv/
-.vscode/
+# Database
+db.sqlite3
