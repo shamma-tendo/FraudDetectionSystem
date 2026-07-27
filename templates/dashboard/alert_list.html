@@ -1,0 +1,51 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Alerts{% endblock %}
+{% block page_title %}Alerts{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-end mb-2">
+    <a href="?show_resolved={% if show_resolved %}0{% else %}1{% endif %}" class="small">
+        {% if show_resolved %}Hide resolved{% else %}Show resolved{% endif %}
+    </a>
+</div>
+
+<div class="card-panel">
+    <table class="table table-clean mb-0">
+        <thead>
+            <tr>
+                <th>Severity</th>
+                <th>Message</th>
+                <th>Raised</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for alert in alerts %}
+            <tr>
+                <td><span class="badge badge-severity-{{ alert.severity|lower }}">{{ alert.severity }}</span></td>
+                <td><a href="{% url 'dashboard:transaction_detail' alert.transaction.id %}">{{ alert.message }}</a></td>
+                <td class="text-muted small">{{ alert.created_at|date:"d M H:i" }}</td>
+                <td>
+                    {% if alert.is_resolved %}
+                        <span class="badge badge-cleared">Resolved</span>
+                    {% else %}
+                        <span class="badge badge-pending">Open</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if not alert.is_resolved %}
+                    <form method="post" action="{% url 'dashboard:resolve_alert' alert.pk %}">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-outline-success" type="submit">Mark resolved</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-muted text-center py-4">No alerts to show.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

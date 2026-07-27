@@ -1,0 +1,50 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Transaction detail{% endblock %}
+{% block page_title %}Transaction detail{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+    <div class="col-md-5">
+        <div class="card-panel">
+            <h6 class="mb-3">Transaction</h6>
+            <table class="table table-sm table-borderless mb-0">
+                <tr><td class="text-muted">Account</td><td>{{ transaction.account.account_number }} ({{ transaction.account.holder_name }})</td></tr>
+                <tr><td class="text-muted">Type</td><td>{{ transaction.get_transaction_type_display }}</td></tr>
+                <tr><td class="text-muted">Amount</td><td>{{ transaction.amount|floatformat:0 }} UGX</td></tr>
+                <tr><td class="text-muted">Location</td><td>{{ transaction.location }}</td></tr>
+                <tr><td class="text-muted">Usual location</td><td>{{ transaction.account.usual_location }}</td></tr>
+                <tr><td class="text-muted">Time</td><td>{{ transaction.timestamp|date:"d M Y, H:i:s" }}</td></tr>
+                <tr><td class="text-muted">Risk score</td><td><strong>{{ transaction.risk_score }}</strong> / 100</td></tr>
+                <tr><td class="text-muted">Status</td><td><span class="badge badge-{{ transaction.status|lower }}">{{ transaction.get_status_display }}</span></td></tr>
+            </table>
+        </div>
+    </div>
+    <div class="col-md-7">
+        <div class="card-panel">
+            <h6 class="mb-3">Why it was scored this way</h6>
+            {% if transaction.rule_matches.all %}
+            <ul class="list-group list-group-flush">
+                {% for match in transaction.rule_matches.all %}
+                <li class="list-group-item px-0">
+                    <div class="d-flex justify-content-between">
+                        <strong class="small">{{ match.rule.description }}</strong>
+                        <span class="text-muted small">+{{ match.rule.weight }} pts</span>
+                    </div>
+                    <div class="text-muted small">{{ match.note }}</div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted small mb-0">No rules fired for this transaction &mdash; it looked normal.</p>
+            {% endif %}
+
+            {% if transaction.alert %}
+            <div class="alert alert-warning mt-3 mb-0 py-2 small">
+                Alert #{{ transaction.alert.id }} was raised
+                ({{ transaction.alert.severity }}){% if transaction.alert.is_resolved %} and has been resolved{% endif %}.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
