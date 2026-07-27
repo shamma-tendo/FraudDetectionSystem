@@ -2,7 +2,11 @@ from django.conf import settings
 from django.db import models
 from transactions.models import Transaction
 
-
+   class Alert(models.Model):
+    class Severity(models.TextChoices):
+        LOW = "LOW", "Low"
+        MEDIUM = "MEDIUM", "Medium"
+        HIGH = "HIGH", "High"
 
 
     transaction = models.OneToOneField(Transaction, on_delete=models.CASCADE, related_name="alert")
