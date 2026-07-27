@@ -1,0 +1,136 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Overview{% endblock %}
+{% block page_title %}Overview{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-label">Transactions today</div>
+            <div class="stat-value">{{ stats.total_today }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-label">Flagged today</div>
+            <div class="stat-value text-danger">{{ stats.flagged_today }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-label">Volume today (UGX)</div>
+            <div class="stat-value">{{ stats.volume_today|floatformat:0 }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-label">Open alerts</div>
+            <div class="stat-value text-warning">{{ stats.open_alerts }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="card-panel">
+            <h6 class="mb-3">Risk distribution</h6>
+            <canvas id="riskChart" height="200"></canvas>
+        </div>
+
+        <div class="card-panel mt-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0">Live alerts</h6>
+                <span class="badge bg-light text-dark border">polls every 4s</span>
+            </div>
+            <ul id="alert-list" class="list-unstyled mb-0" data-last-id="{{ latest_alert_id }}">
+                {% for alert in alerts %}
+                <li class="d-flex justify-content-between border-bottom py-2 small">
+                    <span>
+                        <span class="badge badge-severity-{{ alert.severity|lower }} me-1">{{ alert.severity }}</span>
+                        {{ alert.message }}
+                    </span>
+                    <span class="text-muted">{{ alert.created_at|time:"H:i" }}</span>
+                </li>
+                {% empty %}
+                <li class="text-muted small">No open alerts right now.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card-panel">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0">Recent transactions</h6>
+                <a href="{% url 'dashboard:transaction_list' %}" class="small">View all &rarr;</a>
+            </div>
+            <table class="table table-clean mb-0">
+                <thead>
+                    <tr>
+                        <th>Account</th>
+                        <th>Type</th>
+                        <th>Amount (UGX)</th>
+                        <th>Location</th>
+                        <th>Risk</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for txn in transactions %}
+                    <tr style="cursor:pointer" onclick="window.location='{% url 'dashboard:transaction_detail' txn.id %}'">
+                        <td>{{ txn.account.account_number }}</td>
+                        <td>{{ txn.get_transaction_type_display }}</td>
+                        <td>{{ txn.amount|floatformat:0 }}</td>
+                        <td>{{ txn.location }}</td>
+                        <td style="width:120px">
+                            <div class="risk-bar-track">
+                                <div class="risk-bar-fill" style="width:{{ txn.risk_score }}%; background:{% if txn.risk_score >= 60 %}#d63b3b{% elif txn.risk_score >= 30 %}#ba7517{% else %}#1d9e75{% endif %};"></div>
+                            </div>
+                            <span class="small text-muted">{{ txn.risk_score }}</span>
+                        </td>
+                        <td><span class="badge badge-{{ txn.status|lower }}">{{ txn.get_status_display }}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-muted text-center py-4">No transactions yet. Run the simulator to generate demo activity.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+    new Chart(document.getElementById('riskChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Low (0-29)', 'Medium (30-59)', 'High (60+)'],
+            datasets: [{
+                data: [{% for label, count in risk_bands.items %}{% if not forloop.first %},{% endif %}{{ count }}{% endfor %}],
+                backgroundColor: ['#1d9e75', '#ba7517', '#d63b3b'],
+                borderWidth: 0,
+            }]
+        },
+        options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } } }
+    });
+
+    const alertList = document.getElementById('alert-list');
+    async function pollAlerts() {
+        const since = alertList.dataset.lastId || 0;
+        try {
+            const res = await fetch(`{% url 'dashboard:poll_alerts' %}?since=${since}`);
+            const data = await res.json();
+            data.alerts.forEach(alert => {
+                const li = document.createElement('li');
+                li.className = 'd-flex justify-content-between border-bottom py-2 small';
+                li.innerHTML = `<span><span class="badge badge-severity-${alert.severity.toLowerCase()} me-1">${alert.severity}</span> ${alert.message}</span><span class="text-muted">${alert.created_at}</span>`;
+                alertList.prepend(li);
+                alertList.dataset.lastId = alert.id;
+            });
+        } catch (e) { /* network hiccup, ignore and retry next tick */ }
+    }
+    setInterval(pollAlerts, 4000);
+</script>
+{% endblock %}
