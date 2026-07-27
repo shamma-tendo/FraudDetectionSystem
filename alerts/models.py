@@ -2,7 +2,8 @@ from django.conf import settings
 from django.db import models
 from transactions.models import Transaction
 
-   class Alert(models.Model):
+
+class Alert(models.Model):
     class Severity(models.TextChoices):
         LOW = "LOW", "Low"
         MEDIUM = "MEDIUM", "Medium"
