@@ -1,5 +1,22 @@
 from django.db import models
-from transactions.models import Transaction
+from transactions.models import Account, Transaction
+
+
+class AccountBehaviorProfile(models.Model):
+    """Stores recent behavior patterns for an account to compare against new transactions."""
+
+    account = models.OneToOneField(Account, on_delete=models.CASCADE, related_name="behavior_profile")
+    average_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    common_location = models.CharField(max_length=100, blank=True)
+    common_hour = models.PositiveSmallIntegerField(null=True, blank=True)
+    transaction_count = models.PositiveIntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+
+    def __str__(self):
+        return f"Behavior profile for {self.account}"
 
 
 class DetectionRule(models.Model):
@@ -14,6 +31,7 @@ class DetectionRule(models.Model):
         VELOCITY = "VELOCITY", "Too many transactions in a short window"
         UNUSUAL_LOCATION = "UNUSUAL_LOCATION", "Location differs from account history"
         ODD_HOURS = "ODD_HOURS", "Transaction during odd hours"
+        BEHAVIORAL_ANOMALY = "BEHAVIORAL_ANOMALY", "Transaction differs from recent account behavior"
 
     code = models.CharField(max_length=30, choices=RuleCode.choices, unique=True)
     description = models.CharField(max_length=255)

@@ -6,11 +6,14 @@ unit test independently: build a Transaction with known values, call
 evaluate_transaction, assert on the resulting risk_score.
 """
 
+from collections import Counter
 from datetime import timedelta
+from decimal import Decimal
+
 from django.utils import timezone
 
 from transactions.models import Transaction
-from .models import DetectionRule, RuleMatch
+from .models import AccountBehaviorProfile, DetectionRule, RuleMatch
 
 FLAG_THRESHOLD = 60  # risk_score at/above this marks the transaction FLAGGED
 
@@ -18,6 +21,7 @@ FLAG_THRESHOLD = 60  # risk_score at/above this marks the transaction FLAGGED
 def evaluate_transaction(transaction: Transaction) -> int:
     """Runs all active rules, records matches, updates risk_score/status."""
     total_score = 0
+    _sync_behavior_profile(transaction)
     active_rules = DetectionRule.objects.filter(is_active=True)
 
     for rule in active_rules:
@@ -45,6 +49,8 @@ def _check_rule(rule: DetectionRule, transaction: Transaction):
         return _check_unusual_location(rule, transaction)
     if rule.code == DetectionRule.RuleCode.ODD_HOURS:
         return _check_odd_hours(rule, transaction)
+    if rule.code == DetectionRule.RuleCode.BEHAVIORAL_ANOMALY:
+        return _check_behavioral_anomaly(rule, transaction)
     return False, ""
 
 
@@ -84,4 +90,44 @@ def _check_odd_hours(rule, transaction):
     in_window = (start <= local_hour < end) if start <= end else (local_hour >= start or local_hour < end)
     if in_window:
         return True, f"Transaction at {local_hour}:00 falls in odd-hours window"
+    return False, ""
+
+
+def _sync_behavior_profile(transaction: Transaction):
+    history = transaction.account.transactions.exclude(pk=transaction.pk).order_by("-timestamp")[:10]
+    if not history:
+        profile, _ = AccountBehaviorProfile.objects.get_or_create(account=transaction.account)
+        profile.transaction_count = 0
+        profile.save(update_fields=["transaction_count"])
+        return profile
+
+    amounts = [tx.amount for tx in history]
+    average_amount = sum(amounts, Decimal("0")) / Decimal(len(amounts))
+    locations = [tx.location.strip() for tx in history if tx.location and tx.location.strip()]
+    hours = [timezone.localtime(tx.timestamp).hour for tx in history]
+
+    profile, _ = AccountBehaviorProfile.objects.get_or_create(account=transaction.account)
+    profile.average_amount = average_amount
+    profile.common_location = Counter(locations).most_common(1)[0][0] if locations else ""
+    profile.common_hour = Counter(hours).most_common(1)[0][0] if hours else None
+    profile.transaction_count = len(history)
+    profile.save()
+    return profile
+
+
+def _check_behavioral_anomaly(rule, transaction):
+    profile = _sync_behavior_profile(transaction)
+    if profile.transaction_count < 3 or profile.average_amount <= 0:
+        return False, ""
+
+    if transaction.amount > profile.average_amount * Decimal("3"):
+        return True, (
+            f"Amount {transaction.amount} is much higher than the account's average {profile.average_amount}"
+        )
+
+    if profile.common_location and transaction.location.strip().lower() != profile.common_location.lower():
+        return True, (
+            f"Location '{transaction.location}' differs from the account's usual location '{profile.common_location}'"
+        )
+
     return False, ""
