@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fraud Detection Dashboard</title>
+    <!-- Primary Bootstrap CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <!-- Backup CDN in case primary fails -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    
+    <meta http-equiv="refresh" content="3"> <!-- Auto refreshes every 3 seconds -->
+</head>
+<body class="bg-light p-4">
+    <div class="container-fluid">
+        <h1 class="mb-4">🛡️ Real-Time Fraud Detection Dashboard</h1>
+
+       <!-- Analytics Visuals Row (Pure CSS) -->
+        <div class="row mb-4">
+            <!-- Status Ratio Bar -->
+            <div class="col-md-6">
+                <div class="card p-4 shadow-sm" style="min-height: 220px;">
+                    <h5 class="fw-bold text-secondary mb-3">Transaction Health Ratio</h5>
+                    
+                    <div class="d-flex justify-content-between mb-1 fw-bold">
+                        <span class="text-success">Approved ({{ approved_count }})</span>
+                        <span class="text-danger">Flagged ({{ total_flagged }})</span>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="progress mb-3" style="height: 25px; border-radius: 12px; overflow: hidden;">
+                        {% if total_transactions > 0 %}
+                            <div class="progress-bar bg-success" role="progressbar" style="width: {% widthratio approved_count total_transactions 100 %}%;">
+                                {% widthratio approved_count total_transactions 100 %}%
+                            </div>
+                            <div class="progress-bar bg-danger" role="progressbar" style="width: {% widthratio total_flagged total_transactions 100 %}%;">
+                                {% widthratio total_flagged total_transactions 100 %}%
+                            </div>
+                        {% else %}
+                            <div class="progress-bar bg-secondary" style="width: 100%;">No Data</div>
+                        {% endif %}
+                    </div>
+                    <small class="text-muted">Calculated in real-time from system database history.</small>
+                </div>
+            </div>
+
+            <!-- Alert Severity Breakdown -->
+            <div class="col-md-6">
+                <div class="card p-4 shadow-sm" style="min-height: 220px;">
+                    <h5 class="fw-bold text-secondary mb-3">Active Alerts Severity</h5>
+                    
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between small fw-bold mb-1">
+                            <span class="text-danger">High Severity</span>
+                            <span>{{ high_alerts }} Alerts</span>
+                        </div>
+                        <div class="progress" style="height: 12px;">
+                            <div class="progress-bar bg-danger" style="width: {% if active_alerts_count > 0 %}{% widthratio high_alerts active_alerts_count 100 %}{% else %}0{% endif %}%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between small fw-bold mb-1">
+                            <span class="text-warning">Medium Severity</span>
+                            <span>{{ medium_alerts }} Alerts</span>
+                        </div>
+                        <div class="progress" style="height: 12px;">
+                            <div class="progress-bar bg-warning" style="width: {% if active_alerts_count > 0 %}{% widthratio medium_alerts active_alerts_count 100 %}{% else %}0{% endif %}%;"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="d-flex justify-content-between small fw-bold mb-1">
+                            <span class="text-info">Low Severity</span>
+                            <span>{{ low_alerts }} Alerts</span>
+                        </div>
+                        <div class="progress" style="height: 12px;">
+                            <div class="progress-bar bg-info" style="width: {% if active_alerts_count > 0 %}{% widthratio low_alerts active_alerts_count 100 %}{% else %}0{% endif %}%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Feeds Row -->
+        <div class="row">
+            <!-- Live Transaction Feed -->
+            <div class="col-md-7">
+                <div class="card p-3 shadow-sm">
+                    <h4>Live Transaction Feed</h4>
+                    <table class="table table-striped table-hover mt-2 align-middle">
+                        <thead>
+                            <tr>
+                                <th>Account</th>
+                                <th>Amount</th>
+                                <th>Location</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tx in transactions %}
+                            <tr>
+                                <td>{{ tx.account_number }}</td>
+                                <td>${{ tx.amount }}</td>
+                                <td>{{ tx.location }}</td>
+                                <td>
+                                    {% if tx.is_suspicious %}
+                                        <span class="badge bg-danger">FLAGGED</span>
+                                    {% else %}
+                                        <span class="badge bg-success">APPROVED</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Active Security Alerts -->
+            <div class="col-md-5">
+                <div class="card p-3 border-danger shadow-sm">
+                    <h4 class="text-danger">Active Security Alerts</h4>
+                    <div class="list-group mt-2">
+                        {% for alert in alerts %}
+                        <div class="list-group-item list-group-item-danger mb-2 rounded">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1"><strong>Severity: {{ alert.severity }}</strong></h6>
+                                <small>{{ alert.created_at|date:"H:i:s" }}</small>
+                            </div>
+                            <p class="mb-1">{{ alert.rule_triggered }}</p>
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <small>Account: {{ alert.transaction.account_number }} | Amount: ${{ alert.transaction.amount }}</small>
+                                <form action="{% url 'resolve_alert' alert.id %}" method="POST" style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger bg-white">Resolve</button>
+                                </form>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted">No active security alerts.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart Configuration Script -->
+    <!-- Replace the <script> block at the bottom of index.html with this -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Status Doughnut Chart
+        const statusCtx = document.getElementById('statusChart');
+        if (statusCtx && typeof Chart !== 'undefined') {
+            new Chart(statusCtx.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Approved', 'Flagged'],
+                    datasets: [{
+                        data: [{{ approved_count|default:0 }}, {{ total_flagged|default:0 }}],
+                        backgroundColor: ['#198754', '#dc3545']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // Severity Bar Chart
+            const severityCtx = document.getElementById('severityChart').getContext('2d');
+            new Chart(severityCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Low', 'Medium', 'High'],
+                    datasets: [{
+                        label: 'Alert Count',
+                        data: [{{ low_alerts|default:0 }}, {{ medium_alerts|default:0 }}, {{ high_alerts|default:0 }}],
+                        backgroundColor: ['#ffc107', '#fd7e14', '#dc3545']
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+    });
+</script>
+</body>
+</html>
