@@ -1,0 +1,31 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Accounts{% endblock %}
+{% block page_title %}Monitored accounts{% endblock %}
+
+{% block content %}
+<div class="card-panel">
+    <p class="text-muted small">Manage accounts from the <a href="/admin/transactions/account/">admin panel</a>.</p>
+    <table class="table table-clean mb-0">
+        <thead>
+            <tr>
+                <th>Account number</th>
+                <th>Holder</th>
+                <th>Usual location</th>
+                <th>Transactions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for account in accounts %}
+            <tr>
+                <td>{{ account.account_number }}</td>
+                <td>{{ account.holder_name }}</td>
+                <td>{{ account.usual_location }}</td>
+                <td>{{ account.txn_count }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-muted text-center py-4">No accounts yet &mdash; add some from the admin panel.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
