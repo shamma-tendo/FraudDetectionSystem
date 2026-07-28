@@ -3,29 +3,29 @@
 {% block page_title %}Overview{% endblock %}
 
 {% block content %}
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-4" id="stat-cards">
     <div class="col-md-3">
         <div class="stat-card">
             <div class="stat-label">Transactions today</div>
-            <div class="stat-value">{{ stats.total_today }}</div>
+            <div class="stat-value" id="stat-total-today">{{ stats.total_today }}</div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stat-card">
             <div class="stat-label">Flagged today</div>
-            <div class="stat-value text-danger">{{ stats.flagged_today }}</div>
+            <div class="stat-value text-danger" id="stat-flagged-today">{{ stats.flagged_today }}</div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stat-card">
             <div class="stat-label">Volume today (UGX)</div>
-            <div class="stat-value">{{ stats.volume_today|floatformat:0 }}</div>
+            <div class="stat-value" id="stat-volume-today">{{ stats.volume_today|floatformat:0 }}</div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stat-card">
             <div class="stat-label">Open alerts</div>
-            <div class="stat-value text-warning">{{ stats.open_alerts }}</div>
+            <div class="stat-value text-warning" id="stat-open-alerts">{{ stats.open_alerts }}</div>
         </div>
     </div>
 </div>
@@ -75,7 +75,7 @@
                         <th>Status</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="recent-transactions-body">
                     {% for txn in transactions %}
                     <tr style="cursor:pointer" onclick="window.location='{% url 'dashboard:transaction_detail' txn.id %}'">
                         <td>{{ txn.account.account_number }}</td>
@@ -105,17 +105,82 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
-    //  risk chart (static)
-    new Chart(...);
+    // Risk distribution chart — kept as a variable so poll_overview can
+    // update its data in place instead of recreating the chart each time.
+    const riskChart = new Chart(document.getElementById('riskChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Low (0-29)', 'Medium (30-59)', 'High (60+)'],
+            datasets: [{
+                data: [{% for label, count in risk_bands.items %}{% if not forloop.first %},{% endif %}{{ count }}{% endfor %}],
+                backgroundColor: ['#1d9e75', '#ba7517', '#d63b3b'],
+                borderWidth: 0,
+            }]
+        },
+        options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } } }
+    });
 
-    
+    // ---- Live alerts feed (unchanged behaviour, restored) ----
     const alertList = document.getElementById('alert-list');
     async function pollAlerts() {
         const since = alertList.dataset.lastId || 0;
-        const res = await fetch(`{% url 'dashboard:poll_alerts' %}?since=${since}`);
-        const data = await res.json();
-       
+        try {
+            const res = await fetch(`{% url 'dashboard:poll_alerts' %}?since=${since}`);
+            const data = await res.json();
+            data.alerts.forEach(alert => {
+                const li = document.createElement('li');
+                li.className = 'd-flex justify-content-between border-bottom py-2 small';
+                li.innerHTML = `<span><span class="badge badge-severity-${alert.severity.toLowerCase()} me-1">${alert.severity}</span> ${alert.message}</span><span class="text-muted">${alert.created_at}</span>`;
+                alertList.prepend(li);
+                alertList.dataset.lastId = alert.id;
+            });
+        } catch (e) { /* network hiccup, ignore and retry next tick */ }
     }
-    setInterval(pollAlerts, 4000);  // Only alerts refresh
+
+    // ---- Live overview: stat cards, chart, and recent-transactions table ----
+    const riskColor = (score) => score >= 60 ? '#d63b3b' : score >= 30 ? '#ba7517' : '#1d9e75';
+    const statusBadgeClass = (status) => `badge-${status.toLowerCase()}`;
+
+    function renderTransactionRow(txn) {
+        return `
+            <tr style="cursor:pointer" onclick="window.location='${txn.detail_url}'">
+                <td>${txn.account_number}</td>
+                <td>${txn.type_display}</td>
+                <td>${Math.round(txn.amount).toLocaleString()}</td>
+                <td>${txn.location}</td>
+                <td style="width:120px">
+                    <div class="risk-bar-track">
+                        <div class="risk-bar-fill" style="width:${txn.risk_score}%; background:${riskColor(txn.risk_score)};"></div>
+                    </div>
+                    <span class="small text-muted">${txn.risk_score}</span>
+                </td>
+                <td><span class="badge ${statusBadgeClass(txn.status)}">${txn.status_display}</span></td>
+            </tr>`;
+    }
+
+    async function pollOverview() {
+        try {
+            const res = await fetch(`{% url 'dashboard:poll_overview' %}`);
+            const data = await res.json();
+
+            document.getElementById('stat-total-today').textContent = data.stats.total_today;
+            document.getElementById('stat-flagged-today').textContent = data.stats.flagged_today;
+            document.getElementById('stat-volume-today').textContent = Math.round(data.stats.volume_today).toLocaleString();
+            document.getElementById('stat-open-alerts').textContent = data.stats.open_alerts;
+
+            riskChart.data.datasets[0].data = [data.risk_bands.low, data.risk_bands.medium, data.risk_bands.high];
+            riskChart.update();
+
+            const tbody = document.getElementById('recent-transactions-body');
+            if (data.transactions.length) {
+                tbody.innerHTML = data.transactions.map(renderTransactionRow).join('');
+            } else {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center py-4">No transactions yet. Run the simulator to generate demo activity.</td></tr>';
+            }
+        } catch (e) { /* network hiccup, ignore and retry next tick */ }
+    }
+
+    setInterval(pollAlerts, 4000);
+    setInterval(pollOverview, 5000);
 </script>
 {% endblock %}
