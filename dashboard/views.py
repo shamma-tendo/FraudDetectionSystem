@@ -1,5 +1,7 @@
+import csv
+
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
@@ -95,6 +97,52 @@ def alert_list(request):
         "alerts": qs,
         "show_resolved": show_resolved,
     })
+
+
+@login_required
+def export_alerts_csv(request):
+    """
+    Downloads the currently viewed alerts (open-only, or open+resolved if
+    show_resolved=1 is set, matching whatever the Alerts page is showing)
+    as a CSV file, with the underlying transaction details included so the
+    file is useful on its own without cross-referencing the dashboard.
+    """
+    show_resolved = request.GET.get("show_resolved") == "1"
+    qs = Alert.objects.select_related("transaction", "transaction__account").order_by("-created_at")
+    if not show_resolved:
+        qs = qs.filter(is_resolved=False)
+
+    filename = f"alerts_export_{timezone.localdate().isoformat()}.csv"
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+
+    writer = csv.writer(response)
+    writer.writerow([
+        "Alert ID", "Severity", "Message", "Raised at", "Resolved",
+        "Resolved by", "Resolved at", "Transaction ID", "Account number",
+        "Account holder", "Transaction type", "Amount (UGX)", "Location",
+        "Risk score", "Transaction status",
+    ])
+    for alert in qs:
+        txn = alert.transaction
+        writer.writerow([
+            alert.id,
+            alert.severity,
+            alert.message,
+            timezone.localtime(alert.created_at).strftime("%Y-%m-%d %H:%M:%S"),
+            "Yes" if alert.is_resolved else "No",
+            alert.resolved_by.username if alert.resolved_by else "",
+            timezone.localtime(alert.resolved_at).strftime("%Y-%m-%d %H:%M:%S") if alert.resolved_at else "",
+            txn.id,
+            txn.account.account_number,
+            txn.account.holder_name,
+            txn.get_transaction_type_display(),
+            txn.amount,
+            txn.location,
+            txn.risk_score,
+            txn.get_status_display(),
+        ])
+    return response
 
 
 @login_required
