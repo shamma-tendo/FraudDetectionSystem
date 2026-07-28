@@ -8,6 +8,7 @@ urlpatterns = [
     path("transactions/", views.transaction_list, name="transaction_list"),
     path("transactions/<uuid:pk>/", views.transaction_detail, name="transaction_detail"),
     path("alerts/", views.alert_list, name="alert_list"),
+    path("alerts/export/", views.export_alerts_csv, name="export_alerts_csv"),
     path("alerts/<int:pk>/resolve/", views.resolve_alert, name="resolve_alert"),
     path("rules/", views.rules_list, name="rules_list"),
     path("accounts/", views.accounts_list, name="accounts_list"),
