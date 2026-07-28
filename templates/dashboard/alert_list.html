@@ -3,9 +3,13 @@
 {% block page_title %}Alerts{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-end mb-2">
+<div class="d-flex justify-content-end align-items-center gap-3 mb-2">
     <a href="?show_resolved={% if show_resolved %}0{% else %}1{% endif %}" class="small">
         {% if show_resolved %}Hide resolved{% else %}Show resolved{% endif %}
+    </a>
+    <a href="{% url 'dashboard:export_alerts_csv' %}{% if show_resolved %}?show_resolved=1{% endif %}"
+       class="btn btn-sm btn-outline-dark">
+        Download CSV
     </a>
 </div>
 
