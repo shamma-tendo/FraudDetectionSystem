@@ -100,37 +100,22 @@
 </div>
 {% endblock %}
 
+
+
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
-    new Chart(document.getElementById('riskChart'), {
-        type: 'doughnut',
-        data: {
-            labels: ['Low (0-29)', 'Medium (30-59)', 'High (60+)'],
-            datasets: [{
-                data: [{% for label, count in risk_bands.items %}{% if not forloop.first %},{% endif %}{{ count }}{% endfor %}],
-                backgroundColor: ['#1d9e75', '#ba7517', '#d63b3b'],
-                borderWidth: 0,
-            }]
-        },
-        options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } } }
-    });
+    // Create risk chart (static)
+    new Chart(...);
 
+    // ONLY THIS POLLING FUNCTION EXISTED:
     const alertList = document.getElementById('alert-list');
     async function pollAlerts() {
         const since = alertList.dataset.lastId || 0;
-        try {
-            const res = await fetch(`{% url 'dashboard:poll_alerts' %}?since=${since}`);
-            const data = await res.json();
-            data.alerts.forEach(alert => {
-                const li = document.createElement('li');
-                li.className = 'd-flex justify-content-between border-bottom py-2 small';
-                li.innerHTML = `<span><span class="badge badge-severity-${alert.severity.toLowerCase()} me-1">${alert.severity}</span> ${alert.message}</span><span class="text-muted">${alert.created_at}</span>`;
-                alertList.prepend(li);
-                alertList.dataset.lastId = alert.id;
-            });
-        } catch (e) { /* network hiccup, ignore and retry next tick */ }
+        const res = await fetch(`{% url 'dashboard:poll_alerts' %}?since=${since}`);
+        const data = await res.json();
+        // ... update alert list
     }
-    setInterval(pollAlerts, 4000);
+    setInterval(pollAlerts, 4000);  // Only alerts refresh
 </script>
 {% endblock %}
