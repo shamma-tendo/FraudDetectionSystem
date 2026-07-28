@@ -135,41 +135,41 @@ def poll_alerts(request):
     return JsonResponse({"alerts": new_alerts})
 
 # NEW FUNCTION : for transaction auto update
-@login_required
-def poll_transactions(request):
-    """Return new transactions as JSON."""
-    since_id = request.GET.get("since", 0)
-    new_transactions = Transaction.objects.filter(id__gt=since_id) \
-        .select_related("account") \
-        .order_by("-timestamp")[:20] \
-        .values("id", "account__account_number", "transaction_type", 
-                "amount", "location", "risk_score", "status", "timestamp")
-    for t in new_transactions:
-        t["timestamp"] = t["timestamp"].strftime("%H:%M:%S")
-        t["id"] = str(t["id"])
-    return JsonResponse({"transactions": new_transactions})
+#@login_required
+#def poll_transactions(request):
+  #  """Return new transactions as JSON."""
+ #   since_id = request.GET.get("since", 0)
+  #  new_transactions = Transaction.objects.filter(id__gt=since_id) \
+   #     .select_related("account") \
+    #    .order_by("-timestamp")[:20] \
+     #   .values("id", "account__account_number", "transaction_type", 
+      #          "amount", "location", "risk_score", "status", "timestamp")
+   # for t in new_transactions:
+    #    t["timestamp"] = t["timestamp"].strftime("%H:%M:%S")
+     #   t["id"] = str(t["id"])
+    #return JsonResponse({"transactions": new_transactions})
 
 # NEW FUNCTION: for stats and chart auto update
-@login_required
-def poll_stats(request):
-    """Return updated dashboard statistics and risk bands."""
-    today = timezone.localdate()
-    todays_transactions = Transaction.objects.filter(timestamp__date=today)
+#@login_required
+#def poll_stats(request):
+ #   """Return updated dashboard statistics and risk bands."""
+  #  today = timezone.localdate()
+   # todays_transactions = Transaction.objects.filter(timestamp__date=today)
     
-    stats = {
-        "total_today": todays_transactions.count(),
-        "flagged_today": todays_transactions.filter(
-            status=Transaction.Status.FLAGGED).count(),
-        "volume_today": str(todays_transactions.aggregate(
-            total=Sum("amount"))["total"] or 0),
-        "open_alerts": Alert.objects.filter(is_resolved=False).count(),
-    }
+    #stats = {
+     #   "total_today": todays_transactions.count(),
+      #  "flagged_today": todays_transactions.filter(
+       #     status=Transaction.Status.FLAGGED).count(),
+        #"volume_today": str(todays_transactions.aggregate(
+         #   total=Sum("amount"))["total"] or 0),
+        #"open_alerts": Alert.objects.filter(is_resolved=False).count(),
+    #}
     
-    risk_bands = {
-        "low": Transaction.objects.filter(risk_score__lt=30).count(),
-        "medium": Transaction.objects.filter(
-            risk_score__gte=30, risk_score__lt=60).count(),
-        "high": Transaction.objects.filter(risk_score__gte=60).count(),
-    }
+    #risk_bands = {
+     #   "low": Transaction.objects.filter(risk_score__lt=30).count(),
+      #  "medium": Transaction.objects.filter(
+       #     risk_score__gte=30, risk_score__lt=60).count(),
+        #"high": Transaction.objects.filter(risk_score__gte=60).count(),
+    #}
     
-    return JsonResponse({"stats": stats, "risk_bands": risk_bands})
+   # return JsonResponse({"stats": stats, "risk_bands": risk_bands})
