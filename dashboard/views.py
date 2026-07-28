@@ -133,3 +133,4 @@ def poll_alerts(request):
         a["created_at"] = a["created_at"].strftime("%H:%M:%S")
         a["transaction_id"] = str(a["transaction_id"])
     return JsonResponse({"alerts": new_alerts})
+

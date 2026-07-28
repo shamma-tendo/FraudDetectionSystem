@@ -12,4 +12,5 @@ urlpatterns = [
     path("rules/", views.rules_list, name="rules_list"),
     path("accounts/", views.accounts_list, name="accounts_list"),
     path("poll-alerts/", views.poll_alerts, name="poll_alerts"),
+    
 ]
