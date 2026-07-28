@@ -13,5 +13,5 @@ urlpatterns = [
     path("accounts/", views.accounts_list, name="accounts_list"),
     path("poll-alerts/", views.poll_alerts, name="poll_alerts"),
     path("poll-transactions/", views.poll_transactions, name="poll_transactions"), #new function for transaction  
-    path("poll-stats/", views.poll_stats, name="poll_stats"),                       # NEW function for stats and charts
+    #path("poll-stats/", views.poll_stats, name="poll_stats"),                       # NEW function for stats and charts
 ]
