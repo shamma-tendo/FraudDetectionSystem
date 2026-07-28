@@ -100,37 +100,100 @@
 </div>
 {% endblock %}
 
+
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
-    new Chart(document.getElementById('riskChart'), {
-        type: 'doughnut',
-        data: {
-            labels: ['Low (0-29)', 'Medium (30-59)', 'High (60+)'],
-            datasets: [{
-                data: [{% for label, count in risk_bands.items %}{% if not forloop.first %},{% endif %}{{ count }}{% endfor %}],
-                backgroundColor: ['#1d9e75', '#ba7517', '#d63b3b'],
-                borderWidth: 0,
-            }]
-        },
-        options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } } }
-    });
+    // Reusable chart object (so we can update it)
+    let riskChart = new Chart(...);
 
-    const alertList = document.getElementById('alert-list');
+    // Track last IDs for incremental polling
+    let lastAlertId = {{ latest_alert_id }};
+    let lastTransactionId = '{{ transactions|first|default:"0" }}';
+
+    // EXISTING FUNCTION (improved):
     async function pollAlerts() {
-        const since = alertList.dataset.lastId || 0;
         try {
-            const res = await fetch(`{% url 'dashboard:poll_alerts' %}?since=${since}`);
+            const res = await fetch(`{% url 'dashboard:poll_alerts' %}?since=${lastAlertId}`);
             const data = await res.json();
             data.alerts.forEach(alert => {
                 const li = document.createElement('li');
-                li.className = 'd-flex justify-content-between border-bottom py-2 small';
-                li.innerHTML = `<span><span class="badge badge-severity-${alert.severity.toLowerCase()} me-1">${alert.severity}</span> ${alert.message}</span><span class="text-muted">${alert.created_at}</span>`;
+                li.innerHTML = `...`;
                 alertList.prepend(li);
-                alertList.dataset.lastId = alert.id;
+                lastAlertId = alert.id;  // Update for next poll
             });
-        } catch (e) { /* network hiccup, ignore and retry next tick */ }
+        } catch (e) { }
     }
     setInterval(pollAlerts, 4000);
+
+    // NEW FUNCTION #1:
+    async function pollTransactions() {
+        try {
+            const res = await fetch(`{% url 'dashboard:poll_transactions' %}?since=${lastTransactionId}`);
+            const data = await res.json();
+            const tbody = document.querySelector('.table-clean tbody');
+            
+            data.transactions.forEach(txn => {
+                // Remove old row if exists
+                const oldRow = tbody.querySelector(`tr[data-txn-id="${txn.id}"]`);
+                if (oldRow) oldRow.remove();
+                
+                // Create new row with proper formatting
+                const tr = document.createElement('tr');
+                tr.setAttribute('data-txn-id', txn.id);
+                tr.onclick = () => window.location.href = `/dashboard/transactions/${txn.id}/`;
+                
+                const riskColor = txn.risk_score >= 60 ? '#d63b3b' 
+                    : txn.risk_score >= 30 ? '#ba7517' : '#1d9e75';
+                
+                tr.innerHTML = `
+                    <td>${txn.account__account_number}</td>
+                    <td>${txn.transaction_type}</td>
+                    <td>${parseInt(txn.amount).toLocaleString()}</td>
+                    <td>${txn.location}</td>
+                    <td style="width:120px">
+                        <div class="risk-bar-track">
+                            <div class="risk-bar-fill" style="width:${txn.risk_score}%; background:${riskColor};"></div>
+                        </div>
+                        <span class="small text-muted">${txn.risk_score}</span>
+                    </td>
+                    <td><span class="badge badge-${txn.status.toLowerCase()}">${txn.status}</span></td>
+                `;
+                tbody.prepend(tr);
+                lastTransactionId = txn.id;
+            });
+            
+            // Keep only latest 12 rows
+            while (tbody.children.length > 12) {
+                tbody.removeChild(tbody.lastChild);
+            }
+        } catch (e) { console.log('Transaction poll error:', e); }
+    }
+    setInterval(pollTransactions, 5000);  // Every 5 seconds
+
+    // NEW FUNCTION #2:
+    async function pollStats() {
+        try {
+            const res = await fetch(`{% url 'dashboard:poll_stats' %}`);
+            const data = await res.json();
+            
+            // Update 4 stat cards
+            document.querySelectorAll('.stat-value')[0].textContent = data.stats.total_today;
+            document.querySelectorAll('.stat-value')[1].textContent = data.stats.flagged_today;
+            document.querySelectorAll('.stat-value')[2].textContent = 
+                parseInt(data.stats.volume_today).toLocaleString();
+            document.querySelectorAll('.stat-value')[3].textContent = data.stats.open_alerts;
+            
+            // Update risk chart
+            riskChart.data.datasets[0].data = [
+                data.risk_bands.low,
+                data.risk_bands.medium,
+                data.risk_bands.high
+            ];
+            riskChart.update();
+        } catch (e) { console.log('Stats poll error:', e); }
+    }
+    setInterval(pollStats, 6000);  // Every 6 seconds
 </script>
 {% endblock %}
+
