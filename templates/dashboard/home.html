@@ -105,16 +105,16 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
-    // Create risk chart (static)
+    //  risk chart (static)
     new Chart(...);
 
-    // ONLY THIS POLLING FUNCTION EXISTED:
+    
     const alertList = document.getElementById('alert-list');
     async function pollAlerts() {
         const since = alertList.dataset.lastId || 0;
         const res = await fetch(`{% url 'dashboard:poll_alerts' %}?since=${since}`);
         const data = await res.json();
-        // ... update alert list
+       
     }
     setInterval(pollAlerts, 4000);  // Only alerts refresh
 </script>
