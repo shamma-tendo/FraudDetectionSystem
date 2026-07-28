@@ -101,99 +101,21 @@
 {% endblock %}
 
 
+
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
-    // Reusable chart object (so we can update it)
-    let riskChart = new Chart(...);
+    // Create risk chart (static)
+    new Chart(...);
 
-    // Track last IDs for incremental polling
-    let lastAlertId = {{ latest_alert_id }};
-    let lastTransactionId = '{{ transactions|first|default:"0" }}';
-
-    // EXISTING FUNCTION (improved):
+    // ONLY THIS POLLING FUNCTION EXISTED:
+    const alertList = document.getElementById('alert-list');
     async function pollAlerts() {
-        try {
-            const res = await fetch(`{% url 'dashboard:poll_alerts' %}?since=${lastAlertId}`);
-            const data = await res.json();
-            data.alerts.forEach(alert => {
-                const li = document.createElement('li');
-                li.innerHTML = `...`;
-                alertList.prepend(li);
-                lastAlertId = alert.id;  // Update for next poll
-            });
-        } catch (e) { }
+        const since = alertList.dataset.lastId || 0;
+        const res = await fetch(`{% url 'dashboard:poll_alerts' %}?since=${since}`);
+        const data = await res.json();
+        // ... update alert list
     }
-    setInterval(pollAlerts, 4000);
-
-    // NEW FUNCTION #1:
-    async function pollTransactions() {
-        try {
-            const res = await fetch(`{% url 'dashboard:poll_transactions' %}?since=${lastTransactionId}`);
-            const data = await res.json();
-            const tbody = document.querySelector('.table-clean tbody');
-            
-            data.transactions.forEach(txn => {
-                // Remove old row if exists
-                const oldRow = tbody.querySelector(`tr[data-txn-id="${txn.id}"]`);
-                if (oldRow) oldRow.remove();
-                
-                // Create new row with proper formatting
-                const tr = document.createElement('tr');
-                tr.setAttribute('data-txn-id', txn.id);
-                tr.onclick = () => window.location.href = `/dashboard/transactions/${txn.id}/`;
-                
-                const riskColor = txn.risk_score >= 60 ? '#d63b3b' 
-                    : txn.risk_score >= 30 ? '#ba7517' : '#1d9e75';
-                
-                tr.innerHTML = `
-                    <td>${txn.account__account_number}</td>
-                    <td>${txn.transaction_type}</td>
-                    <td>${parseInt(txn.amount).toLocaleString()}</td>
-                    <td>${txn.location}</td>
-                    <td style="width:120px">
-                        <div class="risk-bar-track">
-                            <div class="risk-bar-fill" style="width:${txn.risk_score}%; background:${riskColor};"></div>
-                        </div>
-                        <span class="small text-muted">${txn.risk_score}</span>
-                    </td>
-                    <td><span class="badge badge-${txn.status.toLowerCase()}">${txn.status}</span></td>
-                `;
-                tbody.prepend(tr);
-                lastTransactionId = txn.id;
-            });
-            
-            // Keep only latest 12 rows
-            while (tbody.children.length > 12) {
-                tbody.removeChild(tbody.lastChild);
-            }
-        } catch (e) { console.log('Transaction poll error:', e); }
-    }
-    setInterval(pollTransactions, 5000);  // Every 5 seconds
-
-    // NEW FUNCTION #2:
-    async function pollStats() {
-        try {
-            const res = await fetch(`{% url 'dashboard:poll_stats' %}`);
-            const data = await res.json();
-            
-            // Update 4 stat cards
-            document.querySelectorAll('.stat-value')[0].textContent = data.stats.total_today;
-            document.querySelectorAll('.stat-value')[1].textContent = data.stats.flagged_today;
-            document.querySelectorAll('.stat-value')[2].textContent = 
-                parseInt(data.stats.volume_today).toLocaleString();
-            document.querySelectorAll('.stat-value')[3].textContent = data.stats.open_alerts;
-            
-            // Update risk chart
-            riskChart.data.datasets[0].data = [
-                data.risk_bands.low,
-                data.risk_bands.medium,
-                data.risk_bands.high
-            ];
-            riskChart.update();
-        } catch (e) { console.log('Stats poll error:', e); }
-    }
-    setInterval(pollStats, 6000);  // Every 6 seconds
+    setInterval(pollAlerts, 4000);  // Only alerts refresh
 </script>
 {% endblock %}
-
