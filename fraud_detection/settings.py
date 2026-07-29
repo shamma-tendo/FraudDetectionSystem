@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'detection',
     'alerts',
     'dashboard',
+    'reports',
 ]
 
 MIDDLEWARE = [

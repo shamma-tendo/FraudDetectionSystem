@@ -1,0 +1,78 @@
+{% extends "dashboard/base.html" %}
+
+
+{% block title %}
+Weekly Fraud Report
+{% endblock %}
+
+
+
+{% block content %}
+
+
+<div class="card">
+
+<h1>
+Weekly Fraud Report
+</h1>
+
+
+<p>
+<b>Period:</b>
+
+{{ report.week_start }}
+
+to
+
+{{ report.week_end }}
+
+</p>
+
+
+<hr>
+
+
+<p>
+Total Transactions:
+
+<strong>
+{{ report.total_transactions }}
+</strong>
+
+</p>
+
+
+<p>
+Fraudulent Transactions:
+
+<strong>
+{{ report.fraudulent_transactions }}
+</strong>
+
+</p>
+
+
+<p>
+Total Amount:
+
+<strong>
+UGX{{ report.total_amount }}
+</strong>
+
+</p>
+
+
+<p>
+Fraud Amount:
+
+<strong>
+UGX{{ report.fraud_amount }}
+</strong>
+
+</p>
+
+
+</div>
+
+
+{% endblock %}
